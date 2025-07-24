@@ -4,7 +4,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 
 # Authenticate using your GitHub token
-g = Github(os.getenv('GITHUB_TOKEN'))  # From GitHub Actions or env
+g = Github(os.getenv('GH_PAT'))  # From GitHub Actions or env
 
 # Set your repo
 repo = g.get_repo("RI-BVN/RamansheeRepo")  # 🔁 Replace with your org/repo
