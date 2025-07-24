@@ -7,7 +7,7 @@ g = Github(os.getenv('GH_PAT'))  # From GitHub Actions or env
 
 repo = g.get_repo("RI-BVN/RamansheeRepo")  # 🔁 Replace with your org/repo
 
-since = datetime.now(datetime.UTC) - timedelta(days=1)
+since = datetime.now(timezone.utc) - timedelta(days=1)
 
 issue_comments = repo.get_issues_comments(since=since)
 pr_comments = repo.get_pulls_comments(since=since)
