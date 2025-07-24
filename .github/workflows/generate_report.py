@@ -1,32 +1,61 @@
 from github import Github
 import os
+import pandas as pd
 from datetime import datetime, timedelta
 
-# Authenticate to GitHub
-g = Github(os.getenv('GITHUB_TOKEN'))
+# Authenticate using your GitHub token
+g = Github(os.getenv('GITHUB_TOKEN'))  # From GitHub Actions or env
 
-# Get the repository
-repo = g.get_repo("Vishal-Bhaliya/your-repo-name")
+# Set your repo
+repo = g.get_repo("RI-BVN/RamansheeRepo")  # 🔁 Replace with your org/repo
 
-# Get the date 24 hours ago
+# Get all issue and PR comments from the last 24 hours
 since = datetime.utcnow() - timedelta(days=1)
 
-# Collect comments from issues and pull requests
-comments = repo.get_issues_comments(since=since)
+# Collect all comments
+issue_comments = repo.get_issues_comments(since=since)
 pr_comments = repo.get_pulls_comments(since=since)
 
-# Generate the report
-report = "# Daily Commented Tasks Report\n\n"
-report += f"Report generated on: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+# Store rows
+rows = []
+sr_no = 1
 
-report += "## Issue Comments\n\n"
-for comment in comments:
-    report += f"- **{comment.user.login}** commented on issue **#{comment.issue.number}**: {comment.body[:100]}...\n"
+# Handle Issue Comments
+for comment in issue_comments:
+    issue = comment.issue
+    rows.append({
+        "Sr.No": sr_no,
+        "Type": "Issue",
+        "Task Title": issue.title,
+        "Assignees": ', '.join([assignee.login for assignee in issue.assignees]) or "Unassigned",
+        "Status": issue.state,
+        "Commented By": comment.user.login,
+        "Comment": comment.body[:200],  # Short preview
+        "Date": comment.created_at.strftime("%Y-%m-%d")
+    })
+    sr_no += 1
 
-report += "\n## Pull Request Comments\n\n"
+# Handle PR Comments
 for comment in pr_comments:
-    report += f"- **{comment.user.login}** commented on pull request **#{comment.pull_request_url.split('/')[-1]}**: {comment.body[:100]}...\n"
+    pr_number = int(comment.pull_request_url.split('/')[-1])
+    pr = repo.get_pull(pr_number)
+    rows.append({
+        "Sr.No": sr_no,
+        "Type": "Pull Request",
+        "Task Title": pr.title,
+        "Assignees": ', '.join([assignee.login for assignee in pr.assignees]) or "Unassigned",
+        "Status": pr.state,
+        "Commented By": comment.user.login,
+        "Comment": comment.body[:200],
+        "Date": comment.created_at.strftime("%Y-%m-%d")
+    })
+    sr_no += 1
 
-# Save the report to a file
-with open("report.md", "w") as f:
-    f.write(report)
+# Create DataFrame and export to Excel
+df = pd.DataFrame(rows, columns=[
+    "Sr.No", "Type", "Task Title", "Assignees", "Status", "Commented By", "Comment", "Date"
+])
+
+today = datetime.today().strftime('%Y-%m-%d')
+df.to_excel(f"daily_commented_tasks_{today}.xlsx", index=False)
+print("Report generated: Excel saved.")
