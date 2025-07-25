@@ -3,11 +3,15 @@ import os
 import pandas as pd
 from datetime import datetime, timedelta
 
-g = Github(os.getenv('GH_PAT'))  # From GitHub Actions or env
+# No need to import 'timezone' explicitly from datetime if you're using utcnow()
+# from datetime import datetime, timedelta, timezone # <--- REMOVE timezone here if using utcnow()
 
-repo = g.get_repo("RI-BVN/RamansheeRepo")  # 🔁 Replace with your org/repo
+g = Github(os.getenv('GH_PAT'))
 
-since = datetime.now(timezone.utc) - timedelta(days=1)
+repo = g.get_repo("RI-BVN/RamansheeRepo")
+
+# Corrected line: Use datetime.utcnow() for a naive UTC datetime
+since = datetime.utcnow() - timedelta(days=1) # This will give you a naive UTC datetime
 
 issue_comments = repo.get_issues_comments(since=since)
 pr_comments = repo.get_pulls_comments(since=since)
@@ -29,7 +33,7 @@ for comment in issue_comments:
         "Assignees": ', '.join([assignee.login for assignee in issue.assignees]) or "Unassigned",
         "Status": issue.state,
         "Commented By": comment.user.login,
-        "Comment": comment.body[:200],  # Short preview
+        "Comment": comment.body[:200], # Short preview
         "Date": comment.created_at.strftime("%Y-%m-%d")
     })
     sr_no += 1
