@@ -2,8 +2,11 @@ name: Daily Commented Tasks Report
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # Runs daily at midnight UTC
-  workflow_dispatch:      # Allows manual run
+    - cron: '0 0 * * *' 
+  workflow_dispatch:     
+
+permissions:
+  contents: write       
 
 jobs:
   generate-report:
@@ -25,17 +28,19 @@ jobs:
 
     - name: Run report generator
       env:
-        GH_PAT: ${{ secrets.GH_PAT }}
-      run: python .github/workflows/generate_report.py  # ✅ Corrected path
+        GH_PAT: ${{ secrets.GH_PAT }}  # Ensure this secret is set if needed
+      run: python .github/workflows/generate_report.py
 
-    - name: Commit report to repo
+    - name: Commit and push report
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Auto-provided by GitHub Actions
       run: |
         git config --global user.name 'github-actions[bot]'
         git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-        
+
         today=$(date +'%Y-%m-%d')
         filename="daily_commented_tasks_${today}.xlsx"
-        
+
         git add "$filename"
         git commit -m "📋 Daily commented tasks report - $today" || echo "No changes to commit"
-        git push
+        git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git HEAD:main
